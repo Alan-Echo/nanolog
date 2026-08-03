@@ -13,8 +13,6 @@ name: Maven Publish
 on:
   push:
     tags: [ "java-v*" ]
-    paths:
-      - 'sdks/java/**'
   workflow_dispatch:
 
 jobs:
