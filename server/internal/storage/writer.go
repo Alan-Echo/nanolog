@@ -10,7 +10,7 @@ import (
 )
 
 // NanoLog Header
-var MagicHeader = []byte("NANOLOG1")
+var MagicHeader = []byte("NANOLOG2")
 
 type ColumnWriter struct {
 	encoder *zstd.Encoder
@@ -49,6 +49,8 @@ func (cw *ColumnWriter) WriteSnapshot(filename string, mt *engine.MemTable) erro
 	svcData := mt.SvcCol
 	hostData := mt.HostCol
 	msgData := mt.MsgCol
+	traceIDData := mt.TraceIDCol
+	clientIPData := mt.ClientIPCol
 
 	rowCount := uint32(len(tsData))
 	if rowCount == 0 {
@@ -84,6 +86,16 @@ func (cw *ColumnWriter) WriteSnapshot(filename string, mt *engine.MemTable) erro
 
 	// Message (String)
 	if err := cw.writeStringCol(f, msgData); err != nil {
+		return err
+	}
+
+	// TraceID (String)
+	if err := cw.writeStringCol(f, traceIDData); err != nil {
+		return err
+	}
+
+	// ClientIP (String)
+	if err := cw.writeStringCol(f, clientIPData); err != nil {
 		return err
 	}
 

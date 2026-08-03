@@ -33,12 +33,22 @@ func (qe *QueryEngine) ComputeHistogram(start, end int64, interval int64, filter
 		}
 
 		// Build row for NanoQL matching
+		traceID := ""
+		if i < len(qe.mt.TraceIDCol) {
+			traceID = qe.mt.TraceIDCol[i]
+		}
+		clientIP := ""
+		if i < len(qe.mt.ClientIPCol) {
+			clientIP = qe.mt.ClientIPCol[i]
+		}
 		row := LogRow{
 			Timestamp: ts,
 			Level:     qe.mt.LvlCol[i],
 			Service:   qe.mt.SvcCol[i],
 			Host:      qe.mt.HostCol[i],
 			Message:   qe.mt.MsgCol[i],
+			TraceID:   traceID,
+			ClientIP:  clientIP,
 		}
 
 		// Apply NanoQL filter if present

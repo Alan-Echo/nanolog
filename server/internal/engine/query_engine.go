@@ -72,7 +72,7 @@ func NewQueryEngine(dataDir string, mt *MemTable, readerFunc SnapshotReaderFunc,
 			for _, row := range recoveredRows {
 				// Re-append to current MemTable
 				// Note: We avoid calling qe.Ingest here to prevent re-writing to WAL
-				qe.mt.Append(row.Timestamp, DecodeLevel(row.Level), row.Service, row.Host, row.Message, row.TraceID)
+				qe.mt.Append(row.Timestamp, DecodeLevel(row.Level), row.Service, row.Host, row.Message, row.TraceID, row.ClientIP)
 			}
 		} else if err != nil {
 			log.Printf("WAL replay warning: %v", err)
@@ -118,7 +118,7 @@ func (qe *QueryEngine) Flush() error {
 		levelCounts[lvl]++
 		svc := qe.mt.SvcCol[i]
 		serviceCounts[svc]++
-		totalBytes += int64(len(qe.mt.MsgCol[i]) + len(svc) + len(qe.mt.HostCol[i]) + 9)
+		totalBytes += int64(len(qe.mt.MsgCol[i]) + len(svc) + len(qe.mt.HostCol[i]) + len(qe.mt.TraceIDCol[i]) + len(qe.mt.ClientIPCol[i]) + 9)
 	}
 	qe.mt.mu.RUnlock()
 
@@ -153,16 +153,16 @@ func (qe *QueryEngine) Flush() error {
 }
 
 // Ingest adds a log row to the WAL and MemTable, triggering a background flush if needed.
-func (qe *QueryEngine) Ingest(ts int64, level, service, host, msg, traceID string) {
+func (qe *QueryEngine) Ingest(ts int64, level, service, host, msg, traceID, clientIP string) {
 	// 1. Write to WAL first for durability
 	if qe.wal != nil {
-		if err := qe.wal.Write(ts, level, service, host, msg); err != nil {
+		if err := qe.wal.Write(ts, level, service, host, msg, traceID, clientIP); err != nil {
 			log.Printf("WAL write error: %v", err)
 		}
 	}
 
 	// 2. Append to MemTable
-	qe.mt.Append(ts, level, service, host, msg, traceID)
+	qe.mt.Append(ts, level, service, host, msg, traceID, clientIP)
 
 	// Periodically log size for user visibility (every ~10MB)
 	currentSize := qe.mt.GetSize()
@@ -237,7 +237,7 @@ func (qe *QueryEngine) flushMemTable(mt *MemTable) {
 		serviceCounts[svc]++
 
 		// Estimate bytes
-		totalBytes += int64(len(mt.MsgCol[i]) + len(svc) + len(mt.HostCol[i]) + 9)
+		totalBytes += int64(len(mt.MsgCol[i]) + len(svc) + len(mt.HostCol[i]) + len(mt.TraceIDCol[i]) + len(mt.ClientIPCol[i]) + 9)
 	}
 	mt.mu.RUnlock()
 

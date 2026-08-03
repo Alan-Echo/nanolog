@@ -9,6 +9,7 @@ type LogRow struct {
 	Host      string `json:"host"`
 	Message   string `json:"message"`
 	TraceID   string `json:"trace_id,omitempty"`
+	ClientIP  string `json:"client_ip,omitempty"`
 }
 
 // Getter methods to implement nanoql.LogRecord interface
@@ -19,6 +20,7 @@ func (r *LogRow) GetService() string  { return r.Service }
 func (r *LogRow) GetHost() string     { return r.Host }
 func (r *LogRow) GetMessage() string  { return r.Message }
 func (r *LogRow) GetTraceID() string  { return r.TraceID }
+func (r *LogRow) GetClientIP() string { return r.ClientIP }
 
 // Filter defines criteria for log retrieval.
 type Filter struct {
@@ -27,6 +29,8 @@ type Filter struct {
 	Level    uint8  `json:"level"`
 	Service  string `json:"service"`
 	Host     string `json:"host"`
+	ClientIP string `json:"client_ip"`
+	TraceID  string `json:"trace_id"`
 	Query    string `json:"q"`     // NanoQL query string
 	Offset   int    `json:"offset"` // Pagination offset (legacy)
 	CursorTs int64  `json:"cursor"` // Cursor timestamp for efficient pagination

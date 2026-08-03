@@ -11,13 +11,17 @@ type testLogRow struct {
 	service   string
 	host      string
 	message   string
+	traceID   string
+	clientIP  string
 }
 
-func (r *testLogRow) GetTimestamp() int64 { return r.timestamp }
-func (r *testLogRow) GetLevel() uint8     { return r.level }
-func (r *testLogRow) GetService() string  { return r.service }
-func (r *testLogRow) GetHost() string     { return r.host }
-func (r *testLogRow) GetMessage() string  { return r.message }
+func (r *testLogRow) GetTimestamp() int64  { return r.timestamp }
+func (r *testLogRow) GetLevel() uint8      { return r.level }
+func (r *testLogRow) GetService() string   { return r.service }
+func (r *testLogRow) GetHost() string      { return r.host }
+func (r *testLogRow) GetMessage() string   { return r.message }
+func (r *testLogRow) GetTraceID() string   { return r.traceID }
+func (r *testLogRow) GetClientIP() string  { return r.clientIP }
 
 func TestLexer(t *testing.T) {
 	tests := []struct {
@@ -150,6 +154,8 @@ func TestMatch(t *testing.T) {
 		service:   "order-service",
 		host:      "192.168.1.1",
 		message:   "Connection timeout occurred",
+		traceID:   "abc-123-def",
+		clientIP:  "10.0.0.55",
 	}
 
 	tests := []struct {
@@ -169,6 +175,15 @@ func TestMatch(t *testing.T) {
 		{"NOT level:ERROR", false},
 		{`host:"192.168.1.1"`, true},
 		{`msg:"timeout"`, true},
+		{`trace_id:"abc-123-def"`, true},
+		{`trace_id:"xyz"`, false},
+		{`traceid:"abc-123-def"`, true},
+		{`client_ip:"10.0.0.55"`, true},
+		{`client_ip:"10.0.0.99"`, false},
+		{`clientip:"10.0.0.55"`, true},
+		// Full-text search across new fields
+		{`"abc-123"`, true},   // hits trace_id
+		{`"10.0.0.55"`, true}, // hits client_ip
 	}
 
 	for _, tt := range tests {

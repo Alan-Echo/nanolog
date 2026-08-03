@@ -10,5 +10,6 @@ type LogRecord struct {
 	Service    string
 	Host       string
 	Message    string
+	ClientIP   string
 	Attributes map[string]interface{}
 }

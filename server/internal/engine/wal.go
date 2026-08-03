@@ -29,7 +29,7 @@ func OpenWAL(path string) (*WAL, error) {
 }
 
 // Write records a log row to the WAL.
-func (w *WAL) Write(ts int64, level, service, host, msg string) error {
+func (w *WAL) Write(ts int64, level, service, host, msg, traceID, clientIP string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -39,6 +39,8 @@ func (w *WAL) Write(ts int64, level, service, host, msg string) error {
 		Service:   service,
 		Host:      host,
 		Message:   msg,
+		TraceID:   traceID,
+		ClientIP:  clientIP,
 	}
 
 	data, err := json.Marshal(row)

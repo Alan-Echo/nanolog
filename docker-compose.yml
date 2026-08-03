@@ -3,11 +3,15 @@ version: '3.8'
 services:
   nanolog:
     build: .
+    image: ghcr.io/alan-echo/nanolog:latest
     container_name: nanolog
     ports:
       - "8080:8080"
     volumes:
-      - ./data_docker:/root/data
+      - nanolog-data:/root/data
     environment:
       - RETENTION=168h
     restart: unless-stopped
+
+volumes:
+  nanolog-data:

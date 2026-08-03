@@ -182,6 +182,14 @@ const hasLog = computed(() => props.show && props.log);
                     <span class="text-gray-500">{{ store.t('drawer.timestamp') }}</span>
                     <span class="text-gray-300 font-mono">{{ formatTimestamp(log?.timestamp || 0) }}</span>
                   </div>
+                  <div class="flex justify-between text-xs border-b border-gray-800 pb-2">
+                    <span class="text-gray-500">{{ store.t('drawer.trace_id') }}</span>
+                    <span class="text-gray-300 font-mono text-[10px] max-w-[200px] truncate" :title="log?.trace_id">{{ log?.trace_id || '--' }}</span>
+                  </div>
+                  <div class="flex justify-between text-xs border-b border-gray-800 pb-2">
+                    <span class="text-gray-500">{{ store.t('drawer.client_ip') }}</span>
+                    <span class="text-gray-300 font-mono text-[10px]">{{ log?.client_ip || '--' }}</span>
+                  </div>
                   <div class="flex justify-between text-xs pb-2">
                     <span class="text-gray-500">{{ store.t('drawer.unix_nanos') }}</span>
                     <span class="text-gray-400 font-mono text-[10px]">{{ log?.timestamp }}</span>

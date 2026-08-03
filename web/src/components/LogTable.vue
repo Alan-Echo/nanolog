@@ -90,6 +90,8 @@ const highlightText = (text: string) => {
           <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.level') }}</th>
           <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.service') }}</th>
           <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.host') }}</th>
+          <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.trace_id') }}</th>
+          <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.client_ip') }}</th>
           <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">{{ store.t('table.message') }}</th>
         </tr>
       </thead>
@@ -115,6 +117,12 @@ const highlightText = (text: string) => {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-medium">
               {{ log.host }}
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-gray-500 max-w-[120px] truncate" :title="log.trace_id">
+              {{ log.trace_id || '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-gray-500">
+              {{ log.client_ip || '-' }}
+            </td>
             <td class="px-6 py-4 text-sm text-gray-300 leading-relaxed font-mono break-all pr-12">
               <div class="truncate max-w-xl" v-html="highlightText(log.message)"></div>
             </td>
@@ -122,7 +130,7 @@ const highlightText = (text: string) => {
         </template>
         
         <tr v-if="logs.length === 0 && !loading">
-            <td colspan="6" class="px-6 py-24 text-center">
+            <td colspan="8" class="px-6 py-24 text-center">
                 <p class="text-gray-600 font-medium">{{ store.t('empty.no_logs_cluster') }}</p>
             </td>
         </tr>

@@ -12,7 +12,10 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-var ErrInvalidHeader = errors.New("invalid .nano file header")
+var (
+	ErrInvalidHeader = errors.New("invalid .nano file header")
+	MagicHeaderV1    = []byte("NANOLOG1") // v1: 5 columns (no TraceID, no ClientIP)
+)
 
 // LogIterator provides a row-by-row view of logs.
 type LogIterator interface {
@@ -66,6 +69,8 @@ type FileIterator struct {
 	services   []string
 	hosts      []string
 	messages   []string
+	traceIDs   []string
+	clientIPs  []string
 
 	rowCount int
 	cursor   int
@@ -79,7 +84,13 @@ func (it *FileIterator) init() error {
 	if _, err := io.ReadFull(it.file, header); err != nil {
 		return err
 	}
-	if !bytes.Equal(header, MagicHeader) {
+
+	var isV2 bool
+	if bytes.Equal(header, MagicHeader) {
+		isV2 = true // "NANOLOG2" - 7 columns
+	} else if bytes.Equal(header, MagicHeaderV1) {
+		isV2 = false // "NANOLOG1" - 5 columns (legacy)
+	} else {
 		return ErrInvalidHeader
 	}
 
@@ -118,9 +129,6 @@ func (it *FileIterator) init() error {
 	}
 
 	// 3. Read and decompress all columns (in-memory for now per block)
-	// Note: True streaming would decompress on demand, but .nano v1 stores
-	// whole columns as single compressed blocks.
-	// We still benefit from row-by-row processing at the engine level.
 
 	tsData, err := it.reader.readAndDecompress(it.file)
 	if err != nil {
@@ -152,9 +160,30 @@ func (it *FileIterator) init() error {
 	}
 	it.messages = bytesToStringSlice(msgData)
 
+	// Read v2-only columns (TraceID and ClientIP)
+	if isV2 {
+		traceIDData, err := it.reader.readAndDecompress(it.file)
+		if err != nil {
+			return err
+		}
+		it.traceIDs = bytesToStringSlice(traceIDData)
+
+		clientIPData, err := it.reader.readAndDecompress(it.file)
+		if err != nil {
+			return err
+		}
+		it.clientIPs = bytesToStringSlice(clientIPData)
+	}
+
 	// Basic column length validation
-	if it.rowCount != len(it.levels) || it.rowCount != len(it.services) || it.rowCount != len(it.messages) || it.rowCount != len(it.hosts) {
-		return errors.New("column length mismatch")
+	if isV2 {
+		if it.rowCount != len(it.levels) || it.rowCount != len(it.services) || it.rowCount != len(it.messages) || it.rowCount != len(it.hosts) || it.rowCount != len(it.traceIDs) || it.rowCount != len(it.clientIPs) {
+			return errors.New("column length mismatch")
+		}
+	} else {
+		if it.rowCount != len(it.levels) || it.rowCount != len(it.services) || it.rowCount != len(it.messages) || it.rowCount != len(it.hosts) {
+			return errors.New("column length mismatch")
+		}
 	}
 
 	return nil
@@ -206,12 +235,23 @@ func (it *FileIterator) Next() bool {
 		}
 
 		// Match found
+		traceID := ""
+		if len(it.traceIDs) > it.cursor {
+			traceID = it.traceIDs[it.cursor]
+		}
+		clientIP := ""
+		if len(it.clientIPs) > it.cursor {
+			clientIP = it.clientIPs[it.cursor]
+		}
+
 		it.currRow = engine.LogRow{
 			Timestamp: ts,
 			Level:     lvl,
 			Service:   svc,
 			Host:      host,
 			Message:   msg,
+			TraceID:   traceID,
+			ClientIP:  clientIP,
 		}
 		return true
 	}

@@ -13,6 +13,8 @@ type LogRecord interface {
 	GetService() string
 	GetHost() string
 	GetMessage() string
+	GetTraceID() string
+	GetClientIP() string
 }
 
 // Match evaluates the AST node against a LogRecord and returns true if it matches.
@@ -82,6 +84,10 @@ func getFieldValue(key string, row LogRecord) string {
 		return levelToString(row.GetLevel())
 	case "timestamp", "ts":
 		return strconv.FormatInt(row.GetTimestamp(), 10)
+	case "trace_id", "traceid", "trace":
+		return row.GetTraceID()
+	case "client_ip", "clientip":
+		return row.GetClientIP()
 	default:
 		return ""
 	}
@@ -105,6 +111,8 @@ func matchFullText(query string, row LogRecord) bool {
 		row.GetHost(),
 		row.GetMessage(),
 		levelToString(row.GetLevel()),
+		row.GetTraceID(),
+		row.GetClientIP(),
 	}
 	for _, f := range fields {
 		if strings.Contains(strings.ToLower(f), q) {

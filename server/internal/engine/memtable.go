@@ -22,12 +22,13 @@ type MemTable struct {
 	mu sync.RWMutex
 
 	// Exported Columns
-	TsCol      []int64  // Timestamp
-	LvlCol     []uint8  // Level (dictionary encoded)
-	SvcCol     []string // Service name
-	HostCol    []string // Hostname/IP
-	MsgCol     []string // Message content
-	TraceIDCol []string // Trace ID for distributed tracing
+	TsCol       []int64  // Timestamp
+	LvlCol      []uint8  // Level (dictionary encoded)
+	SvcCol      []string // Service name
+	HostCol     []string // Hostname/IP
+	MsgCol      []string // Message content
+	TraceIDCol  []string // Trace ID for distributed tracing
+	ClientIPCol []string // Client IP address
 
 	// Metadata
 	SizeBytes int64 // Estimated memory usage in bytes
@@ -49,18 +50,19 @@ type MemTableStats struct {
 func NewMemTable() *MemTable {
 	cap := 4096
 	return &MemTable{
-		TsCol:      make([]int64, 0, cap),
-		LvlCol:     make([]uint8, 0, cap),
-		SvcCol:     make([]string, 0, cap),
-		HostCol:    make([]string, 0, cap),
-		MsgCol:     make([]string, 0, cap),
-		TraceIDCol: make([]string, 0, cap),
-		SizeBytes:  0,
+		TsCol:       make([]int64, 0, cap),
+		LvlCol:      make([]uint8, 0, cap),
+		SvcCol:      make([]string, 0, cap),
+		HostCol:     make([]string, 0, cap),
+		MsgCol:      make([]string, 0, cap),
+		TraceIDCol:  make([]string, 0, cap),
+		ClientIPCol: make([]string, 0, cap),
+		SizeBytes:   0,
 	}
 }
 
 // Append adds a log entry.
-func (mt *MemTable) Append(ts int64, level string, service string, host string, msg string, traceID string) {
+func (mt *MemTable) Append(ts int64, level string, service string, host string, msg string, traceID string, clientIP string) {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
 
@@ -71,9 +73,10 @@ func (mt *MemTable) Append(ts int64, level string, service string, host string, 
 	mt.HostCol = append(mt.HostCol, host)
 	mt.MsgCol = append(mt.MsgCol, msg)
 	mt.TraceIDCol = append(mt.TraceIDCol, traceID)
+	mt.ClientIPCol = append(mt.ClientIPCol, clientIP)
 
-	// Update size estimate: msg + service + host + traceID + 8 (timestamp) + 1 (level)
-	addedSize := int64(len(msg) + len(service) + len(host) + len(traceID) + 8 + 1)
+	// Update size estimate: msg + service + host + traceID + clientIP + 8 (timestamp) + 1 (level)
+	addedSize := int64(len(msg) + len(service) + len(host) + len(traceID) + len(clientIP) + 8 + 1)
 	atomic.AddInt64(&mt.SizeBytes, addedSize)
 
 	// Update stats counter
@@ -103,6 +106,7 @@ func (mt *MemTable) Reset() {
 	mt.HostCol = mt.HostCol[:0]
 	mt.MsgCol = mt.MsgCol[:0]
 	mt.TraceIDCol = mt.TraceIDCol[:0]
+	mt.ClientIPCol = mt.ClientIPCol[:0]
 	atomic.StoreInt64(&mt.SizeBytes, 0)
 }
 
@@ -163,6 +167,10 @@ func (mt *MemTable) SearchWithNanoQL(filter Filter, nqlNode interface{}, limit i
 		if i < len(mt.TraceIDCol) {
 			traceID = mt.TraceIDCol[i]
 		}
+		clientIP := ""
+		if i < len(mt.ClientIPCol) {
+			clientIP = mt.ClientIPCol[i]
+		}
 
 		row := LogRow{
 			Timestamp: ts,
@@ -171,6 +179,7 @@ func (mt *MemTable) SearchWithNanoQL(filter Filter, nqlNode interface{}, limit i
 			Host:      host,
 			Message:   msg,
 			TraceID:   traceID,
+			ClientIP:  clientIP,
 		}
 
 		// Apply NanoQL filter if provided

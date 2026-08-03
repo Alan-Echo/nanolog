@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -650,10 +651,10 @@ func (s *IngestServer) handleIngest(w http.ResponseWriter, r *http.Request) {
 
 		hostStr := string(val.GetStringBytes("host"))
 		if hostStr == "" {
-			// Fallback: Use IP from connection (strip port)
-			hostStr = r.RemoteAddr
-			if idx := strings.LastIndex(hostStr, ":"); idx != -1 {
-				hostStr = hostStr[:idx]
+			// Fallback: Use IP from connection
+			hostStr, _, _ = net.SplitHostPort(r.RemoteAddr)
+			if hostStr == "" {
+				hostStr = r.RemoteAddr
 			}
 		}
 
@@ -665,7 +666,27 @@ func (s *IngestServer) handleIngest(w http.ResponseWriter, r *http.Request) {
 		// Extract trace_id for distributed tracing
 		traceID := string(val.GetStringBytes("trace_id"))
 
-		s.queryEngine.Ingest(tsVal, levelStr, serviceStr, hostStr, msg, traceID)
+		// Extract client_ip: JSON body field takes priority, fall back to headers
+		clientIP := string(val.GetStringBytes("client_ip"))
+		if clientIP == "" {
+			// Check X-Forwarded-For (may contain multiple IPs: client, proxy1, proxy2)
+			clientIP = r.Header.Get("X-Forwarded-For")
+			if idx := strings.Index(clientIP, ","); idx != -1 {
+				clientIP = strings.TrimSpace(clientIP[:idx])
+			}
+		}
+		if clientIP == "" {
+			clientIP = r.Header.Get("X-Real-IP")
+		}
+		if clientIP == "" {
+			// Fallback: Use remote address
+			clientIP, _, _ = net.SplitHostPort(r.RemoteAddr)
+			if clientIP == "" {
+				clientIP = r.RemoteAddr
+			}
+		}
+
+		s.queryEngine.Ingest(tsVal, levelStr, serviceStr, hostStr, msg, traceID, clientIP)
 	}
 
 	// Handle batch (Array) or single (Object)
@@ -755,6 +776,8 @@ func (s *IngestServer) parseFilter(r *http.Request) engine.Filter {
 	}
 	filter.Service = r.URL.Query().Get("service")
 	filter.Host = r.URL.Query().Get("host")
+	filter.ClientIP = r.URL.Query().Get("client_ip")
+	filter.TraceID = r.URL.Query().Get("trace_id")
 	filter.Query = r.URL.Query().Get("q")
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {

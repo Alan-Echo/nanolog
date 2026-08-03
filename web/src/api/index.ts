@@ -23,8 +23,18 @@ async function apiFetch(url: string, options: RequestInit = {}) {
 }
 
 export const api = {
+  async init(payload: { username: string; password: string }) {
+    const response = await fetch(`/api/system/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+
   async login(payload: any) {
-    const response = await fetch('/api/login', {
+    const response = await fetch(`/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -55,7 +65,7 @@ export const api = {
   },
 
   async getSystemStatus() {
-    const res = await fetch('/api/system/status');
+    const res = await fetch(`/api/system/status`);
     return res.json();
   },
 

@@ -79,7 +79,14 @@ export const messages = {
             tz_local: "Local Timezone",
             load_more: "Load More Logs",
             no_more_logs: "No more logs found in this range",
-            all_services: "All Services"
+            all_services: "All Services",
+            level_all: "All Levels",
+            host_placeholder: "Host",
+            message_placeholder: "Message...",
+            trace_id_placeholder: "Trace ID",
+            client_ip_placeholder: "Client IP",
+            search_btn: "Search",
+            clear_filters: "Clear"
         },
         table: {
             timestamp: "Timestamp",
@@ -87,6 +94,8 @@ export const messages = {
             service: "Service",
             host: "Host",
             message: "Message",
+            trace_id: "Trace ID",
+            client_ip: "Client IP",
             no: "#",
             username: "Username",
             role: "Role",
@@ -248,6 +257,8 @@ export const messages = {
             level: "Level",
             timestamp: "Timestamp",
             unix_nanos: "Unix Nanos",
+            trace_id: "Trace ID",
+            client_ip: "Client IP",
             log_payload: "Log Payload",
             view_context: "View Context"
         }
@@ -333,7 +344,14 @@ export const messages = {
             tz_local: "浏览器本地时区",
             load_more: "加载更多日志",
             no_more_logs: "当前范围内没有更多日志",
-            all_services: "所有服务"
+            all_services: "所有服务",
+            level_all: "全部级别",
+            host_placeholder: "主机",
+            message_placeholder: "消息...",
+            trace_id_placeholder: "追踪ID",
+            client_ip_placeholder: "客户端IP",
+            search_btn: "搜索",
+            clear_filters: "清除"
         },
         table: {
             timestamp: "时间戳",
@@ -341,6 +359,8 @@ export const messages = {
             service: "服务",
             host: "主机",
             message: "消息",
+            trace_id: "追踪ID",
+            client_ip: "客户端IP",
             no: "#",
             username: "用户名",
             role: "角色",
@@ -503,6 +523,8 @@ export const messages = {
             level: "级别",
             timestamp: "时间戳",
             unix_nanos: "Unix 纳秒",
+            trace_id: "追踪ID",
+            client_ip: "客户端IP",
             log_payload: "日志内容",
             view_context: "查看上下文"
         }

@@ -16,11 +16,18 @@ export const useAppStore = defineStore('app', () => {
   const currentLang = ref(localStorage.getItem('nanolog_lang') || 'zh');
   const nodeRole = ref('standalone'); // console, engine, standalone
   const systemVersion = ref('v0.0.0');
+  const isInitialized = ref(true); // default true to avoid flash of init page
   const t = computed(() => getT(currentLang.value));
 
   const setNodeRole = (role: string, version?: string) => {
     nodeRole.value = role;
     if (version) systemVersion.value = version;
+  };
+
+  const setSystemStatus = (status: { node_role: string; version?: string; initialized: boolean }) => {
+    nodeRole.value = status.node_role;
+    if (status.version) systemVersion.value = status.version;
+    isInitialized.value = status.initialized;
   };
 
   const setAuth = (token: string, user: string, role: string, remember: boolean = false) => {
@@ -67,11 +74,13 @@ export const useAppStore = defineStore('app', () => {
     lastUsername,
     nodeRole,
     systemVersion,
+    isInitialized,
     t,
     setAuth,
     logout,
     setLang,
     setNodeRole,
+    setSystemStatus,
     addToast,
   };
 });

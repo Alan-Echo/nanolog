@@ -4,6 +4,8 @@ export interface LogItem {
   service: string;
   host: string;
   message: string;
+  trace_id?: string;
+  client_ip?: string;
 }
 
 export interface Stats {
