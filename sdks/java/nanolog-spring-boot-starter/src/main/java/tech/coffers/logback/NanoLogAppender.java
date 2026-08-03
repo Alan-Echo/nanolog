@@ -75,10 +75,12 @@ public class NanoLogAppender extends AppenderBase<ILoggingEvent> {
     private static class EnhancedLogEvent {
         private final ILoggingEvent event;
         private final String traceId;
+        private final String clientIp;
 
-        public EnhancedLogEvent(ILoggingEvent event, String traceId) {
+        public EnhancedLogEvent(ILoggingEvent event, String traceId, String clientIp) {
             this.event = event;
             this.traceId = traceId;
+            this.clientIp = clientIp;
         }
     }
 
@@ -296,10 +298,11 @@ public class NanoLogAppender extends AppenderBase<ILoggingEvent> {
 
         // 1. Extract TraceID from MDC immediately (in logging thread)
         String traceId = extractTraceId(event);
+        String clientIp = extractClientIp(event);
 
         // 2. Wrap and enqueue
         // Never block the logging thread
-        if (!queue.offer(new EnhancedLogEvent(event, traceId))) {
+        if (!queue.offer(new EnhancedLogEvent(event, traceId, clientIp))) {
             addWarn("NanoLog queue full, dropping log event");
         }
     }
@@ -400,6 +403,22 @@ public class NanoLogAppender extends AppenderBase<ILoggingEvent> {
             tid = mdc.get("X-Amzn-Trace-Id");
 
         return tid != null ? tid : "";
+    }
+
+    private String extractClientIp(ILoggingEvent event) {
+        Map<String, String> mdc = event.getMDCPropertyMap();
+        if (mdc == null || mdc.isEmpty()) {
+            return "";
+        }
+
+        // Try common client IP keys
+        String ip = mdc.get("clientIp");
+        if (ip == null)
+            ip = mdc.get("client_ip");
+        if (ip == null)
+            ip = mdc.get("clientIP");
+
+        return ip != null ? ip : "";
     }
 
     private void workerLoop() {
@@ -636,6 +655,9 @@ public class NanoLogAppender extends AppenderBase<ILoggingEvent> {
             // Context fields
             if (wrapper.getTraceId() != null && !wrapper.getTraceId().isEmpty()) {
                 sb.append("\"trace_id\":\"").append(escapeJson(wrapper.getTraceId())).append("\",");
+            }
+            if (wrapper.getClientIp() != null && !wrapper.getClientIp().isEmpty()) {
+                sb.append("\"client_ip\":\"").append(escapeJson(wrapper.getClientIp())).append("\",");
             }
             sb.append("\"thread_name\":\"").append(escapeJson(e.getThreadName())).append("\",");
             sb.append("\"logger_name\":\"").append(escapeJson(e.getLoggerName())).append("\",");
