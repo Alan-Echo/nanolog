@@ -67,6 +67,8 @@ func NewIngestServer(qe *engine.QueryEngine, ms *controller.Store, webDir string
 func (s *IngestServer) Start(addr string, role string) error {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/health", s.handleHealth)
+
 	mime.AddExtensionType(".js", "application/javascript")
 	mime.AddExtensionType(".mjs", "application/javascript")
 	mime.AddExtensionType(".css", "text/css")
@@ -100,7 +102,6 @@ func (s *IngestServer) Start(addr string, role string) error {
 }
 
 func (s *IngestServer) RegisterConsoleRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/api/login", s.handleLogin)
 	mux.HandleFunc("/api/system/status", s.handleSystemStatus)
 	mux.HandleFunc("/api/system/init", s.handleSystemInit)
@@ -143,7 +144,6 @@ func (s *IngestServer) RegisterConsoleRoutes(mux *http.ServeMux) {
 }
 
 func (s *IngestServer) RegisterIngesterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/health", s.handleHealth)
 	// Ingest endpoint (Authenticated)
 	mux.Handle("/api/ingest", s.AuthMiddleware(http.HandlerFunc(s.handleIngest)))
 
