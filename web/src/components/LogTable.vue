@@ -48,21 +48,20 @@ const getSearchTerms = () => {
   const q = props.searchQuery;
   if (!q) return [];
   const terms: string[] = [];
-  
+
+  // Quoted strings → message search terms
   const quotedMatches = q.match(/"([^"]+)"/g);
   if (quotedMatches) {
     quotedMatches.forEach(m => terms.push(m.replace(/"/g, '')));
   }
-  
-  const kvMatches = q.match(/\w+:([^\s"]+|"[^"]+")/g);
-  if (kvMatches) {
-    kvMatches.forEach(m => {
-      const val = m.split(':')[1]?.replace(/"/g, '');
-      if (val && !['AND', 'OR', 'NOT'].includes(val.toUpperCase())) {
-        terms.push(val);
-      }
-    });
-  }
+
+  // Remove key:value patterns, then extract bare words as message terms
+  const withoutKV = q.replace(/\w+:\S+/g, '').replace(/\s+/g, ' ').trim();
+  const bareTerms = withoutKV.split(/\s+/).filter(w =>
+    w && !['AND', 'OR', 'NOT'].includes(w.toUpperCase())
+  );
+  terms.push(...bareTerms);
+
   return [...new Set(terms)];
 };
 
