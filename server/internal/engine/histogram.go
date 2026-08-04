@@ -21,6 +21,12 @@ func (qe *QueryEngine) ComputeHistogram(start, end int64, interval int64, filter
 			return nil, err
 		}
 		nqlNode = node
+		// Clear the raw query string so the legacy full-text filter in
+		// FileIterator.Next() does not blindly apply it (it only searches
+		// service/host/message and would incorrectly skip rows when the
+		// query contains field selectors like trace_id:xxx).  NanoQL
+		// post-filtering below handles the actual matching.
+		filter.Query = ""
 	}
 
 	// 1. Scan MemTable

@@ -280,6 +280,12 @@ func (qe *QueryEngine) ExecuteScan(filter Filter, limit int) ([]LogRow, error) {
 			return nil, fmt.Errorf("invalid query syntax: %w", err)
 		}
 		nqlNode = node
+		// Clear the raw query string so the legacy full-text filter in
+		// FileIterator.Next() does not blindly apply it (it only searches
+		// service/host/message and would incorrectly skip rows when the
+		// query contains field selectors like trace_id:xxx).  NanoQL
+		// post-filtering below handles the actual matching.
+		filter.Query = ""
 	}
 
 	var targetCount int
