@@ -125,7 +125,7 @@ func (l *Lexer) readIdent() Token {
 }
 
 func isIdentStart(ch byte) bool {
-	return unicode.IsLetter(rune(ch)) || ch == '_'
+	return unicode.IsLetter(rune(ch)) || unicode.IsDigit(rune(ch)) || ch == '_'
 }
 
 func isIdentChar(ch byte) bool {
