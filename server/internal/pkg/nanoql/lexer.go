@@ -3,6 +3,7 @@ package nanoql
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // TokenType represents the type of a lexical token.
@@ -30,12 +31,20 @@ type Token struct {
 // Lexer tokenizes NanoQL input.
 type Lexer struct {
 	input string
-	pos   int
+	pos   int // byte position
 }
 
 // NewLexer creates a new Lexer for the given input.
 func NewLexer(input string) *Lexer {
 	return &Lexer{input: input, pos: 0}
+}
+
+// peekRune returns the next rune and its size without advancing.
+func (l *Lexer) peekRune() (rune, int) {
+	if l.pos >= len(l.input) {
+		return utf8.RuneError, 0
+	}
+	return utf8.DecodeRuneInString(l.input[l.pos:])
 }
 
 // NextToken returns the next token from the input.
@@ -46,43 +55,52 @@ func (l *Lexer) NextToken() Token {
 		return Token{Type: TokenEOF}
 	}
 
-	ch := l.input[l.pos]
+	r, size := l.peekRune()
+	if r == utf8.RuneError && size == 0 {
+		return Token{Type: TokenEOF}
+	}
 
-	// Single-character tokens
-	switch ch {
-	case ':':
-		l.pos++
-		return Token{Type: TokenColon, Value: ":"}
-	case '(':
-		l.pos++
-		return Token{Type: TokenLParen, Value: "("}
-	case ')':
-		l.pos++
-		return Token{Type: TokenRParen, Value: ")"}
-	case '!':
-		if l.pos+1 < len(l.input) && l.input[l.pos+1] == '=' {
-			l.pos += 2
-			return Token{Type: TokenNeq, Value: "!="}
+	// Single-char ASCII tokens
+	if size == 1 {
+		ch := l.input[l.pos]
+		switch ch {
+		case ':':
+			l.pos++
+			return Token{Type: TokenColon, Value: ":"}
+		case '(':
+			l.pos++
+			return Token{Type: TokenLParen, Value: "("}
+		case ')':
+			l.pos++
+			return Token{Type: TokenRParen, Value: ")"}
+		case '!':
+			if l.pos+1 < len(l.input) && l.input[l.pos+1] == '=' {
+				l.pos += 2
+				return Token{Type: TokenNeq, Value: "!="}
+			}
+			return l.readIdent()
+		case '"':
+			return l.readString()
 		}
-		// Single '!' not followed by '=' is an error, treat as ident for now
-		return l.readIdent()
-	case '"':
-		return l.readString()
 	}
 
-	// Keywords and identifiers
-	if isIdentStart(ch) {
+	// Keywords and identifiers (rune-based)
+	if isRuneIdentStart(r) {
 		return l.readIdent()
 	}
 
-	// Unknown character, skip
-	l.pos++
+	// Unknown rune, skip
+	l.pos += size
 	return l.NextToken()
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.pos < len(l.input) && unicode.IsSpace(rune(l.input[l.pos])) {
-		l.pos++
+	for l.pos < len(l.input) {
+		r, size := utf8.DecodeRuneInString(l.input[l.pos:])
+		if !unicode.IsSpace(r) {
+			break
+		}
+		l.pos += size
 	}
 }
 
@@ -105,8 +123,12 @@ func (l *Lexer) readString() Token {
 
 func (l *Lexer) readIdent() Token {
 	start := l.pos
-	for l.pos < len(l.input) && isIdentChar(l.input[l.pos]) {
-		l.pos++
+	for l.pos < len(l.input) {
+		r, size := utf8.DecodeRuneInString(l.input[l.pos:])
+		if !isRuneIdentChar(r) {
+			break
+		}
+		l.pos += size
 	}
 	value := l.input[start:l.pos]
 
@@ -124,11 +146,10 @@ func (l *Lexer) readIdent() Token {
 	return Token{Type: TokenIdent, Value: value}
 }
 
-func isIdentStart(ch byte) bool {
-	return unicode.IsLetter(rune(ch)) || unicode.IsDigit(rune(ch)) || ch == '_'
+func isRuneIdentStart(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
 
-func isIdentChar(ch byte) bool {
-	r := rune(ch)
-	return unicode.IsLetter(r) || unicode.IsDigit(r) || ch == '_' || ch == '-' || ch == '.'
+func isRuneIdentChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' || r == '.'
 }
