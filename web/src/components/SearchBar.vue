@@ -104,8 +104,8 @@ const levelOptions = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
 
 <template>
   <header class="min-h-16 bg-gray-900 border-b border-gray-800 flex items-center px-8 py-3 shrink-0 relative z-40 flex-wrap gap-y-2">
-    <!-- Row: Time + Service + Level ... Message at end -->
-    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+    <!-- Row 1: Time + Service + Level + Host + TraceID + ClientIP + Clear/Refresh -->
+    <div class="flex items-center space-x-3 flex-wrap gap-y-2 w-full">
       <TimeRangeSelector @update="handleRangeUpdate" @auto-refresh="$emit('auto-refresh', $event)" />
       <ServiceSelector @select="handleServiceSelect" />
 
@@ -131,44 +131,6 @@ const levelOptions = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
         </button>
       </div>
 
-      <!-- Clear + Refresh -->
-      <button
-        v-if="hasFilters()"
-        type="button"
-        @click="clearAllFilters"
-        class="flex items-center space-x-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-        :title="store.t('search.clear_filters')"
-      >
-        <X class="w-3 h-3" />
-        <span>{{ store.t('search.clear_filters') }}</span>
-      </button>
-      <button @click="handleRefresh" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-all">
-        <RefreshCw class="w-5 h-5" :class="{'animate-spin': loading}" />
-      </button>
-
-      <!-- Message (main full-text search, positioned last as the longest field) -->
-      <div class="relative flex-1 min-w-[200px] group">
-        <input
-          type="text"
-          v-model="messageFilter"
-          @keyup.enter="handleKeyEnter"
-          :placeholder="store.t('search.message_placeholder')"
-          class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-3 pr-8 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-        />
-        <button
-          v-if="messageFilter"
-          type="button"
-          @click="messageFilter = ''; doSearch()"
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors z-10"
-          title="Clear"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Row 2: Host + TraceID + ClientIP + Search button -->
-    <div class="flex items-center space-x-3 w-full">
       <!-- Host -->
       <div class="relative group">
         <input
@@ -226,6 +188,43 @@ const levelOptions = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
           title="Clear"
         >
           <X class="w-3 h-3" />
+        </button>
+      </div>
+
+      <!-- Clear + Refresh -->
+      <button
+        v-if="hasFilters()"
+        type="button"
+        @click="clearAllFilters"
+        class="flex items-center space-x-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        :title="store.t('search.clear_filters')"
+      >
+        <X class="w-3 h-3" />
+        <span>{{ store.t('search.clear_filters') }}</span>
+      </button>
+      <button @click="handleRefresh" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-all">
+        <RefreshCw class="w-5 h-5" :class="{'animate-spin': loading}" />
+      </button>
+    </div>
+
+    <!-- Row 2: Message + Search button -->
+    <div class="flex items-center space-x-3 w-full">
+      <div class="relative flex-1 min-w-[200px] group">
+        <input
+          type="text"
+          v-model="messageFilter"
+          @keyup.enter="handleKeyEnter"
+          :placeholder="store.t('search.message_placeholder')"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-3 pr-8 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+        />
+        <button
+          v-if="messageFilter"
+          type="button"
+          @click="messageFilter = ''; doSearch()"
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors z-10"
+          title="Clear"
+        >
+          <X class="w-3.5 h-3.5" />
         </button>
       </div>
 
